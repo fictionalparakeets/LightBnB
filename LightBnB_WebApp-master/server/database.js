@@ -83,12 +83,15 @@ const getAllReservations = function(guest_id, limit = 10) {
   const values = [guest_id, limit];
   return pool
     .query(`
-    SELECT *, properties.*
-    FROM reservations
-    JOIN properties ON property_id = properties.id
-    WHERE guest_id = $1
-    LIMIT $2;
-    `, values)
+      SELECT reservations.*, properties.*, AVG(property_reviews.rating) AS average_rating
+      FROM reservations
+      JOIN properties ON property_id = properties.id
+      JOIN property_reviews ON reservation_id = reservations.id
+      WHERE reservations.guest_id = $1 AND reservations.end_date < now()::date
+      GROUP BY reservations.id, properties.id
+      ORDER BY reservations.start_date
+      LIMIT $2;
+      `, values)
     .then(res => res.rows ? res.rows : null)
     .catch(err => console.error('query error', err.stack))
 }
@@ -106,8 +109,44 @@ exports.getAllReservations = getAllReservations;
 
 // NEW - uses database
 const getAllProperties = function(options, limit = 10) {
+  values = [limit];
+
+  // Create base query string
+  let queryString = `
+    SELECT properties.*, avg(property_reviews.rating) as average_rating
+    FROM properties
+    JOIN property_reviews ON properties.id = property_id `;
+
+  // Build query string based on conditions created by form submission (options)
+  if (options.city) {
+    values.push(`%${options.city}%`);
+    queryString += `WHERE city LIKE $${values.length} `;
+  }
+  if (options.owner_id) {
+    values.push(`${options.owner_id}`);
+    queryString += `AND owner_id LIKE $${values.length} `;
+  }
+  if (options.minimum_price_per_night) {
+    values.push(`${options.minimum_price_per_night * 100}`);
+    queryString += `AND cost_per_night >= $${values.length} `;
+  }
+  if (options.maximum_price_per_night) {
+    values.push(`${options.maximum_price_per_night * 100}`);
+    queryString += `AND cost_per_night <= $${values.length} `;
+  }
+  if (options.minimum_rating) {
+    values.push(`${options.minimum_rating}`);
+    queryString += `AND property_reviews.rating >= $${values.length} `;
+  }
+
+  // Add the remainder of the query string
+  queryString += `
+    GROUP BY properties.id
+    ORDER BY cost_per_night
+    LIMIT $1;`;
+
   return pool
-    .query(`SELECT * FROM properties LIMIT $1;`, [limit])
+    .query(queryString, values)
     .then(res => res.rows ? res.rows : null)
     .catch(err => console.error('query error', err.stack))
 }
