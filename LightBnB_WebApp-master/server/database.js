@@ -57,14 +57,14 @@ exports.getUserWithId = getUserWithId;
 
 // NEW - uses database
 const addUser = function(user) {
-  values = [user.name, user.email, user.password];
+  const values = [user.name, user.email, user.password];
   return pool
     .query(`
     INSERT INTO users (name, email, password)
     VALUES($1, $2, $3)
     RETURNING *;
     `, values)
-    .then((res) => res.rows)
+    .then(res => res.rows)
     .catch(err => console.error('query error', err.stack))
 }
 exports.addUser = addUser;
@@ -77,8 +77,20 @@ exports.addUser = addUser;
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
+
+// NEW - uses database
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+  const values = [guest_id, limit];
+  return pool
+    .query(`
+    SELECT *, properties.*
+    FROM reservations
+    JOIN properties ON property_id = properties.id
+    WHERE guest_id = $1
+    LIMIT $2;
+    `, values)
+    .then(res => res.rows ? res.rows : null)
+    .catch(err => console.error('query error', err.stack))
 }
 exports.getAllReservations = getAllReservations;
 
@@ -96,7 +108,7 @@ exports.getAllReservations = getAllReservations;
 const getAllProperties = function(options, limit = 10) {
   return pool
     .query(`SELECT * FROM properties LIMIT $1;`, [limit])
-    .then((res) => res.rows)
+    .then(res => res.rows ? res.rows : null)
     .catch(err => console.error('query error', err.stack))
 }
 exports.getAllProperties = getAllProperties;
