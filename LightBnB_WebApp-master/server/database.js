@@ -158,10 +158,39 @@ exports.getAllProperties = getAllProperties;
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
+
+
+// NEW - uses database
 const addProperty = function(property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  values = [];
+
+  let queryString = `INSERT INTO properties(`
+
+  // These keys = values that need to be stored in database as integers
+  const typeConvert = ['owner_id', 'parking_spaces', 'number_of_bathrooms', 'number_of_bedrooms']
+
+  // Iterate over property object, add key to INSERT clause of query, add value to values array
+  for (const attribute in property) {
+    if (property[attribute]) {
+      typeConvert.includes(property[attribute]) ? values.push(Number(property[attribute])) : values.push(property[attribute]);
+      queryString += `${attribute}, `;
+    }
+  }
+
+  // Add necessary query text between clauses
+  queryString += `active) VALUES(`;
+
+  // Add parameterized values to reference items in values array
+  for (let i = 0; i < values.length; i++) {
+    queryString += `$${i + 1}, `;
+  }
+
+  // Add remaining query
+  queryString += `true) RETURNING *;`;
+
+  return pool
+    .query(queryString, values)
+    .then(res => res.rows ? res.rows : null)
+    .catch(err => console.error('query error', err.stack))
 }
 exports.addProperty = addProperty;
