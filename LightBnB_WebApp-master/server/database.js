@@ -1,6 +1,3 @@
-const properties = require('./json/properties.json');
-const users = require('./json/users.json');
-
 const { Pool, Client } = require('pg');
 
 const pool = new Pool({
@@ -11,10 +8,10 @@ const pool = new Pool({
 });
 
 pool.connect().then(() => {
-	console.log("Connected")
+  console.log("Connected");
 }).catch(e => {
-	console.log(e.message);
-})
+  console.log(e.message);
+});
 
 /// ----------------------------------------------------- Users
 
@@ -29,8 +26,8 @@ const getUserWithEmail = function(email) {
   return pool
     .query(`SELECT * FROM users WHERE email = $1;`, [email])
     .then(res => res.rows[0] ? res.rows[0] : null)
-    .catch(err => console.error('query error', err.stack))
-}
+    .catch(err => console.error('query error', err.stack));
+};
 exports.getUserWithEmail = getUserWithEmail;
 
 /**
@@ -44,8 +41,8 @@ const getUserWithId = function(id) {
   return pool
     .query(`SELECT * FROM users WHERE id = $1;`, [id])
     .then(res => res.rows[0] ? res.rows[0] : null)
-    .catch(err => console.error('query error', err.stack))
-}
+    .catch(err => console.error('query error', err.stack));
+};
 exports.getUserWithId = getUserWithId;
 
 
@@ -65,8 +62,8 @@ const addUser = function(user) {
     RETURNING *;
     `, values)
     .then(res => res.rows)
-    .catch(err => console.error('query error', err.stack))
-}
+    .catch(err => console.error('query error', err.stack));
+};
 exports.addUser = addUser;
 
 
@@ -93,8 +90,8 @@ const getAllReservations = function(guest_id, limit = 10) {
       LIMIT $2;
       `, values)
     .then(res => res.rows ? res.rows : null)
-    .catch(err => console.error('query error', err.stack))
-}
+    .catch(err => console.error('query error', err.stack));
+};
 exports.getAllReservations = getAllReservations;
 
 
@@ -109,7 +106,7 @@ exports.getAllReservations = getAllReservations;
 
 // NEW - uses database
 const getAllProperties = function(options, limit = 10) {
-  values = [limit];
+  const values = [limit];
 
   // Create base query string
   let queryString = `
@@ -148,8 +145,8 @@ const getAllProperties = function(options, limit = 10) {
   return pool
     .query(queryString, values)
     .then(res => res.rows ? res.rows : null)
-    .catch(err => console.error('query error', err.stack))
-}
+    .catch(err => console.error('query error', err.stack));
+};
 exports.getAllProperties = getAllProperties;
 
 
@@ -162,12 +159,12 @@ exports.getAllProperties = getAllProperties;
 
 // NEW - uses database
 const addProperty = function(property) {
-  values = [];
+  const values = [];
 
-  let queryString = `INSERT INTO properties(`
+  let queryString = `INSERT INTO properties(`;
 
   // These keys = values that need to be stored in database as integers
-  const typeConvert = ['owner_id', 'parking_spaces', 'number_of_bathrooms', 'number_of_bedrooms']
+  const typeConvert = ['owner_id', 'parking_spaces', 'number_of_bathrooms', 'number_of_bedrooms'];
 
   // Iterate over property object, add key to INSERT clause of query, add value to values array
   for (const attribute in property) {
@@ -191,6 +188,6 @@ const addProperty = function(property) {
   return pool
     .query(queryString, values)
     .then(res => res.rows ? res.rows : null)
-    .catch(err => console.error('query error', err.stack))
-}
+    .catch(err => console.error('query error', err.stack));
+};
 exports.addProperty = addProperty;
